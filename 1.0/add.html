@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>add</title>
+
+<table>
+    <tr>
+        <th>Номер заявки</th>
+        <th>Дата добавления</th>
+        <th>Обурудование</th>
+        <th>Тип неисправности</th>
+        <th>Описание проблемы</th>
+        <th>Клиент</th>
+        <th>Статус заявки</th>
+        <th>Комментарий</th>
+    </tr>
+    <tr>
+        <td><input id="id" placeholder="Номер заявки"></td>
+        <td><input id="startDate" type="date"></td>
+        <td><input id="oborodovanie" placeholder="Обурудование"></td>
+        <td><input id="problema" placeholder="Тип неисправности"></td>
+        <td><input id="opicanieproblem" placeholder="Описание проблемы"></td>
+        <td><input id="client" placeholder="Клиент"></td>
+        <td>
+            <select id="status">
+                <option value="В ожидании">В ожидании</option>
+                <option value="В работе">В работе</option>
+                <option value="Выполнено">Выполнено</option>
+            </select>
+        </td>
+        <td><input id="com" placeholder="Комментарий"></td>
+        <td><input id="save" value="Сохранить и отправить" type="button"></td>
+    </tr>
+</table>
+
+<script>
+    document.getElementById("save").onclick = async () => {
+        let order = {
+            id: document.getElementById("id").value,
+            startDate: document.getElementById("startDate").value,
+            oborodovanie: document.getElementById("oborodovanie").value,
+            problema: document.getElementById("problema").value,
+            opicanieproblem: document.getElementById("opicanieproblem").value,
+            client: document.getElementById("client").value,
+            status: document.getElementById("status").value,
+            com: document.getElementById("com").value
+        };
+
+        if (!order.id || !order.startDate || !order.oborodovanie || !order.problema || !order.opicanieproblem || !order.client || !order.com || !order.status) {
+            alert("Заполните все поля формы.");
+            return;
+        }
+
+        const response = await fetch("http://127.0.0.1:8080/", {
+            method: "POST",
+            headers: { "Content-type": "application/json" },
+            body: JSON.stringify(order)
+        });
+
+        if (response.ok) {
+            alert("Заказ успешно отправлен!");
+            document.getElementById("id").value = '';
+            document.getElementById("startDate").value = '';
+            document.getElementById("oborodovanie").value = '';
+            document.getElementById("problema").value = '';
+            document.getElementById("opicanieproblem").value = '';
+            document.getElementById("client").value = '';
+            document.getElementById("com").value = '';
+            document.getElementById("status").value = 'В ожидании';
+        } else {
+            alert("Ошибка при отправке заказа. Попробуйте позже.");
+        }
+    };
+</script>
+    
+</head>
+<body>
+    
+</body>
+</html>

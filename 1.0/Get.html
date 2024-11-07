@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Список заявок</title>
+</head>
+
+<body>
+    <h1>Список заявок</h1>
+    <table border="1"><thead><tr>
+                <th>Номер заявки</th>
+                <th>Дата добавления</th>
+                <th>Дата завершения</th>
+                <th>Оборудование</th>
+                <th>Тип неисправности</th>
+                <th>Описание проблемы</th>
+                <th>Клиент</th>
+                <th>Статус заявки</th>
+                <th>Комментарий</th>
+                <th>Мастер</th>
+                <th>Действия</th>
+            </tr></thead>
+        <tbody id="ordersTable"></tbody>
+    </table>
+
+    <h2>Добавить новую заявку</h2>
+    <table>
+        <tr><td>Номер заявки</td><td><input id="id" placeholder="Номер заявки"></td></tr>
+        <tr><td>Дата добавления</td><td><input id="startDate" type="date"></td></tr>
+        <tr><td>Оборудование</td><td><input id="oborodovanie" placeholder="Оборудование"></td></tr>
+        <tr><td>Тип неисправности</td><td><input id="problema" placeholder="Тип неисправности"></td></tr>
+        <tr><td>Описание проблемы</td><td><input id="opicanieproblem" placeholder="Описание проблемы"></td></tr>
+        <tr><td>Клиент</td><td><input id="client" placeholder="Клиент"></td></tr>
+        <tr><td>Статус заявки</td><td>
+                <select id="status">
+                    <option value="Ожидания">Ожидания</option>
+                    <option value="В работе">В работе</option>
+                    <option value="Завершено">Завершено</option>
+                </select></td></tr>
+        <tr><td>Комментарий</td><td><input id="com" placeholder="Комментарий"></td></tr>
+        <tr><td>Мастер</td><td><input id="worker" placeholder="Мастер"></td></tr>
+        <tr><td colspan="2"><button id="save">Сохранить и отправить</button></td></tr>
+    </table>
+
+    <h1>Статистика</h1>
+        <button id="stats1">Завершённые заявки</button>
+        <button id="stats2">Количество заявок по типам неисправностей</button>
+        <button id="stats3">Среднее время выполнения заявок</button>
+
+<!-- Блок для вывода статистики -->
+<div id="statsOutput"></div>
+
+    <script>
+        let isEditing = false;
+        let editingOrderId = null;
+
+        // Функция для получения списка заявок
+        async function GetOrders() {
+            let response = await fetch("http://localhost:8080/", { method: "GET" });
+            let orders = await response.json();
+            let table = document.getElementById("ordersTable");
+
+            orders.forEach(o => {
+                let tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${o.id}</td>
+                    <td>${o.startDate.substring(0, 10)}</td>
+                    <td>${o.endDate ? o.endDate.substring(0, 10) : ''}</td>
+                    <td>${o.oborodovanie}</td>
+                    <td>${o.problema}</td>
+                    <td>${o.opicanieproblem}</td>
+                    <td>${o.client}</td>
+                    <td>${o.status}</td>
+                    <td>${o.com}</td>
+                    <td>${o.worker}</td>
+                    <td>
+                        <button onclick="editOrder(${o.id})">Редактировать</button>
+                    </td>
+                `;
+                table.append(tr);
+            });
+        }
+
+        GetOrders();
+
+        document.getElementById("save").onclick = async () => {
+            let order = {
+                id: parseInt(document.getElementById("id").value),
+                day: parseInt(document.getElementById("startDate").value.split("-")[2]),
+                month: parseInt(document.getElementById("startDate").value.split("-")[1]),
+                year: parseInt(document.getElementById("startDate").value.split("-")[0]),
+                oborodovanie: document.getElementById("oborodovanie").value,
+                problema: document.getElementById("problema").value,
+                opicanieproblem: document.getElementById("opicanieproblem").value,
+                client: document.getElementById("client").value,
+                status: document.getElementById("status").value,
+                com: document.getElementById("com").value,
+                worker: document.getElementById("worker").value
+            };
+
+            if (isEditing && editingOrderId) {
+                const response = await fetch(`http://localhost:8080/${editingOrderId}`, {
+                    method: "PUT",
+                    headers: { "Content-type": "application/json" },
+                    body: JSON.stringify(order)
+                });
+
+                if (response.ok) {
+                    alert("Заявка успешно обновлена!");
+                    location.reload(); // Обновляем страницу
+                } else {
+                    alert("Ошибка при обновлении заявки.");
+                }
+            } else {
+                const response = await fetch("http://localhost:8080/", {
+                    method: "POST",
+                    headers: { "Content-type": "application/json" },
+                    body: JSON.stringify(order)
+                });
+
+                if (response.ok) {
+                    alert("Заявка успешно отправлена!");
+                    location.reload(); // Обновляем страницу
+                } else {
+                    alert("Ошибка при отправке заявки.");
+                }
+            }
+        };
+
+
+        document.getElementById("stats1").onclick = async () => {
+            let response = await fetch("http://localhost:8080/stats/1");
+            let stats = await response.json();
+            let output = document.getElementById("statsOutput");
+            output.innerHTML = "<h2>Завершённые заявки</h2>";
+
+            stats.forEach(o => {
+                output.innerHTML += `
+                    <p>Заявка №${o.id}: ${o.problema}, клиент: ${o.client}, Завершено ${o.endDate.substring(0, 10)}</p>
+                `;
+            });
+        };
+
+        document.getElementById("stats2").onclick = async () => {
+            let response = await fetch("http://localhost:8080/stats/2");
+            let stats = await response.json();
+            let output = document.getElementById("statsOutput");
+            output.innerHTML = "<h2>Количество заявок по типам неисправностей</h2>";
+
+            for (let [problema, count] of Object.entries(stats)) {
+                output.innerHTML += `<p>${problema}: ${count}</p>`;
+            }
+        };
+
+        document.getElementById("stats3").onclick = async () => {
+            let response = await fetch("http://localhost:8080/stats/3");
+            let stats = await response.json();
+            let output = document.getElementById("statsOutput");
+
+            if (stats.error) {
+                output.innerHTML = `<h2>Ошибка</h2><p>${stats.error}</p>`;
+            } else {
+                output.innerHTML = `<h2>Среднее время выполнения заявок</h2><p>${stats["Среднее время выполнения (дни)"]} день</p>`;
+            }
+        };
+        
+        function editOrder(id) {
+            fetch(`http://localhost:8080/${id}`)
+                .then(response => response.json())
+                .then(order => {
+                    document.getElementById("id").value = order.id;
+                    document.getElementById("startDate").value = order.startDate ? order.startDate.substring(0, 10) : '';
+                    document.getElementById("oborodovanie").value = order.oborodovanie || '';
+                    document.getElementById("problema").value = order.problema || '';
+                    document.getElementById("opicanieproblem").value = order.opicanieproblem || '';
+                    document.getElementById("client").value = order.client || '';
+                    document.getElementById("status").value = order.status || 'В ожидании';
+                    document.getElementById("com").value = order.com || '';
+                    document.getElementById("worker").value = order.worker || '';
+
+                    isEditing = true;
+                    editingOrderId = order.id;
+                });
+}
+    </script>
+
+</body>
+
+</html>
